@@ -27,7 +27,7 @@ DIRB="$backup_patch/mysql/$HOST"
 mkdir -p $DIRB/$month/$day
 
 cd /var/lib/mysql
-LIST=`ls -l | grep ^d | awk '{print $9}'`
+LIST=`find * -type d`
 
 for basname in $LIST;do 
 
