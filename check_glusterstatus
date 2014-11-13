@@ -1,0 +1,35 @@
+#!/bin/sh
+
+volume=$1
+
+STATUS_OK="Started"
+
+cmd="sudo /usr/sbin/gluster"
+
+clusterstatus=`$cmd volume info $volume | /bin/grep Status | /bin/awk '{print $2}'`
+
+countbricks=`$cmd volume info $volume | grep "Number of Bricks" | awk -F "=" '{print $2}' | tr -d " "`
+
+countpeers=`$cmd peer status | grep "Number of Peers" | awk -F ":" '{print $2}'`
+peersstatus=`$cmd peer status | grep "State" | grep "Peer in Cluster (Connected)" | wc -l`
+
+clustersize=`echo "$peersstatus + 1" | bc`
+
+if [ "$clusterstatus" != $STATUS_OK ]; then
+        msg="CRITICAL"
+        status=2
+else if [ "`echo "$countbricks > $clustersize" | bc`" == "1" -o "`echo "$countpeers > $peersstatus" | bc`" == "1" ]; then
+	    msg="WARNING"
+    	    status=1
+     else
+        msg="OK"
+        status=0
+     fi
+fi
+
+# Printing the results:
+echo "$msg - status comment=$clusterstatus, cluster size = $clustersize nodes, bricks=$countbricks"
+
+# Bye!
+
+exit $status

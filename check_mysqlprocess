@@ -1,0 +1,30 @@
+#!/bin/sh
+
+cmd="mysql -u root -N -B"
+
+max_conn=`$cmd -e "show variables like 'max_connections';" | awk '{print $2}'`
+
+
+crit_value=`echo "$max_conn*0.75" | bc`
+warn_value=`echo "$max_conn*0.5" | bc`
+
+value=`$cmd -e "show processlist;" | wc -l`
+
+# Comparing the result and setting the correct level:
+if [ "`echo "$value >= $crit_value" | bc`" == "1" ]; then
+        msg="CRITICAL"
+        status=2
+else if [ "`echo "$value >= $warn_value" | bc`" == "1" ]; then
+        	msg="WARNING"
+        	status=1
+     else
+        msg="OK"
+        status=0
+     fi
+fi
+
+# Printing the results:
+echo "$msg - MySQl Processes = $value  max = $max_conn | 'proc'=$value; 'max_proc'=$max_conn;"
+
+# Bye!
+exit $status

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+iface=$1
+
+data=`cat /proc/net/dev | grep $iface | awk -F ":" '{print $2}' | grep '[0123456789]'`
+inbytes=`echo $data | awk '{print $1}'`
+outbytes=`echo $data | awk '{print $9}'`
+
+inpackets=`echo $data | awk '{print $2}'`
+outpackets=`echo $data | awk '{print $10}'`
+
+case $2 in
+    1) echo "in=$inbytes  out=$outbytes | in=$inbytes out=$outbytes" ;;
+    0) echo "in=$inpackets     out=$outpackets | in=$inpackets out=$outpackets";;
+esac
+
+exit 0

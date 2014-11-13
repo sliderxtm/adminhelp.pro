@@ -1,0 +1,47 @@
+#!/bin/sh
+
+cmd="cat /proc/sys/fs/file-nr"
+
+function help {
+echo -e "\n\tThis plugin shows the files stats, using the proc.\n\tIt prints three statistics:\n\t\t Number of open files \n\t\t Number of open files but nod current used\n\t\t Number of max files in system\n"
+	exit -1
+}
+
+# Getting parameters:
+while getopts "h" OPT; do
+	case $OPT in
+#		"d") disk=$OPTARG;;
+#		"w") warning=$OPTARG;;
+#		"c") critical=$OPTARG;;
+		"h") help;;
+	esac
+done
+
+
+# Doing the actual check:
+value=`$cmd | awk '{print $1}'`
+value2=`$cmd | awk '{print $2}'`
+value3=`$cmd | awk '{print $3}'`
+
+crit_value=`echo "$value3*0.75" | bc`
+
+warn_value=`echo "$value3*0.5" | bc`
+
+# Comparing the result and setting the correct level:
+if [ "`echo "$value >= $crit_value" | bc`" == "1" ]; then
+        msg="CRITICAL"
+        status=2
+else if [ "`echo "$value >= $warn_value" | bc`" == "1" ]; then
+        	msg="WARNING"
+        	status=1
+     else
+        msg="OK"
+        status=0
+     fi
+fi
+
+# Printing the results:
+echo "$msg - Number of open files = $value; number of not used open files = $value2 ; MAX open files = $value3 | 'ofiles'=$value; 'onufiles'=$value2; 'maxfiles'=$value3;"
+
+# Bye!
+exit $status

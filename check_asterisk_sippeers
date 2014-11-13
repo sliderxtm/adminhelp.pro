@@ -1,0 +1,23 @@
+#!/bin/sh
+
+res=`/usr/sbin/asterisk -r -x "sip show peers" | wc -l`
+
+warn_value=$1
+crit_value=$2
+
+number_of_servers=$3
+
+number_of_peers="`echo "$res - 2 - $number_of_servers" | /usr/bin/bc`"
+
+if [ "`echo "$number_of_peers >= $warn_value" | /usr/bin/bc`" == "1" ]; then
+    if [ "`echo "$number_of_peers >= $crit_value" | /usr/bin/bc`" == "1" ]; then
+        echo "CRITICAL. sip peers = $number_of_peers | sip_peers=$number_of_peers"
+        exit 2
+    else
+        echo "WARNING. sip peers = $number_of_peers | sip_peers=$number_of_peers"
+        exit 1
+    fi
+else
+    echo "OK sip peers = $number_of_peers | sip_peers=$number_of_peers"
+    exit 0
+fi
