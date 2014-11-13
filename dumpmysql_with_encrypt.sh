@@ -22,7 +22,7 @@ month=$(/bin/date +%m)
 day=$(/bin/date +%d)
 cd /var/lib/mysql
 
-DIRB="$backup_patch/mysql/$HOST"
+DIRB="$backup_patch/$HOST/mysql"
 
 mkdir -p $DIRB/$month/$day
 
