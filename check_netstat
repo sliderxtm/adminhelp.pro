@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 netstat=`which netstat 2>/dev/null`
 bc=`which bc 2>/dev/null`
