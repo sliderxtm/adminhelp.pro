@@ -1,0 +1,66 @@
+#Main interface name
+:global MainIf ether1-Prov1
+#Reserve interface name
+:global RsrvIf ether2-Prov2
+
+:local PingCount 3
+#
+:local PingTarget1 8.8.8.8
+#
+:local PingTarget2 91.219.24.37
+#
+:local PingTarget3 213.59.5.110
+#
+:local PingTarget1R 194.87.0.50
+#
+:local PingTarget2R 80.68.243.243
+#
+:local PingTarget3R 8.8.4.4
+
+#Check main internet connection
+:local MainIfInetOk false;
+:local PingResult1 [/ping $PingTarget1 count=$PingCount interface=$MainIf]
+:local PingResult2 [/ping $PingTarget2 count=$PingCount interface=$MainIf]
+:local PingResult3 [/ping $PingTarget3 count=$PingCount interface=$MainIf]
+:set MainIfInetOk (($PingResult1 + $PingResult2 + $PingResult3) >= (2 * $PingCount))
+
+#Check reserved internet connection
+:local RsrvIfInetOk false;
+:local PingResult1 [/ping $PingTarget1R count=$PingCount interface=$RsrvIf]
+:local PingResult2 [/ping $PingTarget2R count=$PingCount interface=$RsrvIf]
+:local PingResult3 [/ping $PingTarget3R count=$PingCount interface=$RsrvIf]
+
+:set RsrvIfInetOk (($PingResult1 + $PingResult2 + $PingResult3) >= (2 * $PingCount))
+
+:put "MainIfInetOk=$MainIfInetOk"
+:put "RsrvIfInetOk=$RsrvIfInetOk"
+
+if (!$MainIfInetOk) do={
+/log error "Main internet connection error"
+}
+
+if (!$RsrvIfInetOk) do={
+/log error "Reserve internet connection error"
+}
+
+:local MainGWDistance [/ip route get [find comment="Prov1"] distance]
+:local RsrvGWDistance [/ip route get [find comment="Prov2"] distance]
+:put "MainGWDistance=$MainGWDistance"
+:put "RsrvGWDistance=$RsrvGWDistance"
+
+#SetUp gateways
+if ($MainIfInetOk && ($MainGWDistance >= $RsrvGWDistance)) do={
+/ip route set [find comment="Prov1"] distance=1
+/ip route set [find comment="Prov2"] distance=2
+foreach i in=[/ip firewall connection find] do={/ip firewall connection remove $i}
+/ip ipsec installed-sa flush sa-type=all
+/log warning "Switch to main internet connection"
+}
+
+if (!$MainIfInetOk && $RsrvIfInetOk && ($MainGWDistance <= $RsrvGWDistance)) do={
+/ip route set [find comment="Prov1"] distance=2
+/ip route set [find comment="Prov2"] distance=1
+foreach i in=[/ip firewall connection find] do={/ip firewall connection remove $i}
+/ip ipsec installed-sa flush sa-type=all
+/log warning "Switch to reserve internet connection"
+}
