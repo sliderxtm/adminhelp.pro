@@ -1,0 +1,56 @@
+:global MainL2TPName L2TPMain
+:global RezervL2TPName L2TPRezerv
+
+:local PingCount 3
+#
+:local PingTarget1 A.B.C.D
+#
+:local PingTarget2 A.B.C.D
+
+#Check
+:local MainIfInetOk false;
+:local PingResult1 [/ping $PingTarget1 count=$PingCount]
+#/log error "$PingResult1"
+:set MainIfInetOk ($PingResult1 >= 1)
+
+#Check reserved internet connection
+:local RsrvIfInetOk false;
+:local PingResult1 [/ping $PingTarget2 count=$PingCount]
+:set RsrvIfInetOk ($PingResult1 >= 1)
+
+:put "MainIfInetOk=$MainIfInetOk"
+:put "RsrvIfInetOk=$RsrvIfInetOk"
+
+if (!$MainIfInetOk) do={
+/log error "L2TP Main internet connection error"
+}
+
+if (!$RsrvIfInetOk) do={
+/log error "L2TP Reserve internet connection error"
+}
+
+
+#SetUp L2tp
+
+if ($MainIfInetOk && ([/interface get $MainL2TPName disabled]=true)) do={
+/interface l2tp-client disable $RezervL2TPName
+/interface l2tp-client enable $MainL2TPName
+}
+
+if (!$MainIfInetOk && ([/interface get $MainL2TPName disabled]=false)) do={
+/interface l2tp-client disable $MainL2TPName
+}
+
+if (!$MainIfInetOk && $RsrvIfInetOk && ([/interface get $RezervL2TPName disabled]=true)) do={
+/interface l2tp-client disable $MainL2TPName
+/interface l2tp-client enable $RezervL2TPName
+}
+
+if ($MainIfInetOk && ([/interface get $RezervL2TPName disabled]=false)) do={
+/interface l2tp-client disable $RezervL2TPName
+}
+
+if (!$RsrvIfInetOk && ([/interface get $RezervL2TPName disabled]=false)) do={
+/interface l2tp-client disable $RezervL2TPName
+}
+
