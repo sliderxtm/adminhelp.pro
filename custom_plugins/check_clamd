@@ -6,6 +6,7 @@
 # Processes to check
 PROCLIST_RED="clamd"
 PROCLIST_YELLOW=""
+PROCLIST_EXCLUDE="clamd.amavisd"
 
 # Ports to check
 PORTLIST=""
@@ -59,7 +60,7 @@ check_processes_red()
         PROCESS="0"
         ERROR_PROCS=""
         PROC=$PROCLIST_RED
-        if [ `ps -ef | grep "$PROC" | grep -v grep | wc -l` -lt 1 ]; then
+        if [ `ps -ef | grep "$PROC" | grep -v "$PROCLIST_EXCLUDE" | grep -v $(basename $0) | grep -v grep | wc -l` -lt 1 ]; then
                         PROCESS=1
                         ERROR_PROCS="$ERROR_PROCS""$PROC ";
         fi
