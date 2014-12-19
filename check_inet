@@ -52,19 +52,23 @@ if (!$RsrvIfInetOk) do={
 if ($MainIfInetOk && ($MainGWDistance >= $RsrvGWDistance)) do={
 /ip route set [find comment="Prov1"] distance=1
 /ip route set [find comment="Prov2"] distance=2
+/interface disable $RsrvIf
 /ip firewall connection tracking set enabled=no
 delay 5
 /ip firewall connection tracking set enabled=yes
 /ip ipsec installed-sa flush sa-type=all
 /log warning "Switch to main internet connection"
+/interface enable $RsrvIf
 }
 
 if (!$MainIfInetOk && $RsrvIfInetOk && ($MainGWDistance <= $RsrvGWDistance)) do={
 /ip route set [find comment="Prov1"] distance=2
 /ip route set [find comment="Prov2"] distance=1
+/interface disable $MainIf
 /ip firewall connection tracking set enabled=no
 delay 5
 /ip firewall connection tracking set enabled=yes
 /ip ipsec installed-sa flush sa-type=all
 /log warning "Switch to reserve internet connection"
+/interface enable $MainIf
 }
