@@ -1,0 +1,119 @@
+#!/bin/sh
+
+
+
+function help {
+echo -e "\n\tThis plugin monitor varios state of synology NAS via SNMP.\n\n Usage: `basename $0` -H host -C community -t type [-w warn level] [-c critical level] [-s storageid] [-h this help]\n\n
+\tWhere:\n\n\t\ttype:  type of state to monitor :\n\t\t\t\t\tSystemFan: fan state in box\n\t\t\t\t\tCpuFan: cpu fan state 
+\t\t\t\t\tDiskStatus1: Status of disk 1\n\t\t\t\t\tDiskStatus2: Status of disk 2
+\t\t\t\t\tTempDisk1: Temperatura of disk 1\n\t\t\t\t\tTempDisk2: Temperatura of disk 2 \n\t\t\t\t\tRaidStatus1: Status of raid 1
+\t\t\t\t\tRaidStatus2: Status of raid 2 \n\t\t\t\t\tStorageUsed: Use of storage \$storageid in procent \n\n		storageid:  id of storage in SNMP MIBs (hrStorageSize.\$storageid and hrStorageUsed.\$storageid)\n\t\tcommunity: SNMP community"
+    exit -1
+}
+
+# Getting parameters:
+while getopts "H:C:t:s:c:w:" OPT; do
+    case $OPT in
+    "H") HOST=$OPTARG;;
+    "C") community=$OPTARG;;
+    "w") warn=$OPTARG;;
+    "c") crit=$OPTARG;;
+    "t") type=$OPTARG;;
+    "s") storageid=$OPTARG;;
+    "h") help;;
+    esac
+done
+
+
+
+cmd="snmpwalk -Ov -v 2c -c $community $HOST"
+
+check_level () {
+
+    value=$1
+    crit_value=$2
+    warn_value=$3
+    if [ "`echo "$value >= $crit_value" | bc`" == "1" ]; then
+    	msg="CRITICAL"
+    	status=2
+    else if [ "`echo "$value >= $warn_value" | bc`" == "1" ]; then
+    	msg="WARNING"
+    	status=1
+	else
+    	    msg="OK"
+    	    status=0
+	fi
+    fi
+    return $status 
+}
+
+
+case $type in
+
+    SystemFan)	result=`$cmd 1.3.6.1.4.1.6574.1.4.1 | awk -F ":" '{print $2}' | tr -d " "`
+		     check_level $result $crit $warn
+		     status=$?
+		     MSG="Status = $msg. SystemFan status = $result"
+		;;
+
+    CpuFan)	result=`$cmd 1.3.6.1.4.1.6574.1.4.2 | awk -F ":" '{print $2}' | tr -d " "`
+		     check_level $result $crit $warn
+		     status=$?
+		     MSG="Status = $msg. Cpu Fan status = $result"
+		;;
+
+    DiskStatus1)	result=`$cmd 1.3.6.1.4.1.6574.2.1.1.5.0 | awk -F ":" '{print $2}' | tr -d " "`
+		     check_level $result $crit $warn
+		     status=$?
+		     MSG="Status = $msg. Disk 1 status = $result"
+		;;
+
+    DiskStatus2)	result=`$cmd 1.3.6.1.4.1.6574.2.1.1.5.1 | awk -F ":" '{print $2}' | tr -d " "`
+		     check_level $result $crit $warn
+		     status=$?
+		     MSG="Status = $msg. Disk 2 status = $result"
+		;;
+
+    TempDisk1)	result=`$cmd 1.3.6.1.4.1.6574.2.1.1.6.0 | awk -F ":" '{print $2}' | tr -d " "`
+		     check_level $result $crit $warn
+		     status=$?
+		     MSG="Status = $msg. Temperatura disk 1 = $result | 'temp'=$result;"
+		;;
+
+    TempDisk2)	result=`$cmd 1.3.6.1.4.1.6574.2.1.1.6.1 | awk -F ":" '{print $2}' | tr -d " "`
+		     check_level $result $crit $warn
+		     status=$?
+		     MSG="Status = $msg. Temperatura disk 1 = $result | 'temp'=$result;"
+		;;
+
+    RaidStatus1)	result=`$cmd 1.3.6.1.4.1.6574.3.1.1.3.0 | awk -F ":" '{print $2}' | tr -d " "`
+		     check_level $result $crit $warn
+		     status=$?
+		     MSG="Status = $msg. Raid 1 status = $result"
+		;;
+		
+    RaidStatus2)	result=`$cmd 1.3.6.1.4.1.6574.3.1.1.3.1 | awk -F ":" '{print $2}' | tr -d " "`
+		     check_level $result $crit $warn
+		     status=$?
+		     MSG="Status = $msg. Raid 2 status = $result"
+		;;
+
+    StorageUsed)	
+			if [ "$storageid" == "" ]; then help; fi;
+			result1=`$cmd hrStorageSize.$storageid | awk -F ":" '{print $2}' | tr -d " "`
+			result2=`$cmd hrStorageUsed.$storageid | awk -F ":" '{print $2}' | tr -d " "`
+		     result=`echo $result2*100/$result1 | bc`
+		     check_level $result $crit $warn
+		     status=$?
+		     MSG="Status = $msg. Storage used = $result% | 'storage_used'=$result;"
+		     
+		;;
+    *)
+	help ;;
+esac
+
+# Printing the results:
+echo "$MSG"
+
+ # Bye!
+exit $status
