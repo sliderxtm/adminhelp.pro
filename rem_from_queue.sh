@@ -3,6 +3,11 @@
 email=$1
 
 
+if [ "$email" = "" ]; then
+    echo "Usage: $0 [email]"
+    echo "For delete all e-mails to [email] from any queue"
+    exit 1
+fi
 
 # $7=sender, $8=recipient1, $9=recipient2
 
