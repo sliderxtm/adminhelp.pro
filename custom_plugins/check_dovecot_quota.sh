@@ -1,5 +1,10 @@
 #!/bin/sh
 
+####
+####  Published by http://www.adminhelp.pro
+####
+
+
 doveadm=`which doveadm 2>/dev/null`
 
 function help {
